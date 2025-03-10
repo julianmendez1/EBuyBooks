@@ -17,8 +17,17 @@ switch ($action) {
     case 'guardar_libro':
         $libroController->guardarLibro();
         break;
-    case 'buscar':
-        $libroController->buscar();
+    case 'agregar_al_carrito':
+        $libroController->agregarAlCarrito();
+        break;
+    case 'ver_carrito':
+        $libroController->verCarrito();
+        break;
+    case 'eliminar_del_carrito':
+        $libroController->eliminarDelCarrito();
+        break;
+    case 'buscar_ajax':
+        $libroController->buscarAjax();
         break;
     default:
         $libroController->index();

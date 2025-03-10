@@ -34,13 +34,24 @@ class LibroModel {
         return $this->db;
     }
     public function buscarLibros($palabraClave) {
-        $query = "SELECT id, titulo, autor, precio, img, stock FROM libros 
-                  WHERE titulo LIKE :palabraClave OR autor LIKE :palabraClave";
+        // Dividir la palabra clave en términos individuales
+        $terminos = explode(' ', $palabraClave);
+    
+        // Construir la consulta SQL dinámicamente
+        $query = "SELECT id, titulo, autor, precio, img, stock FROM libros WHERE ";
+        $condiciones = [];
+    
+        foreach ($terminos as $termino) {
+            $condiciones[] = "(titulo LIKE :termino OR autor LIKE :termino)";
+        }
+    
+        $query .= implode(' AND ', $condiciones);
         $stmt = $this->db->prepare($query);
     
-        // Agregar comodines para buscar coincidencias parciales
-        $palabraClave = "%$palabraClave%";
-        $stmt->bindValue(':palabraClave', $palabraClave);
+        // Asignar los valores a los parámetros
+        foreach ($terminos as $termino) {
+            $stmt->bindValue(':termino', "%$termino%");
+        }
     
         // Depuración: Mostrar la consulta SQL y la palabra clave
         error_log("Consulta SQL: $query");
@@ -48,6 +59,20 @@ class LibroModel {
     
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function obtenerLibroPorId($id) {
+        $query = "SELECT id, titulo, autor, precio, img, stock FROM libros WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    public function actualizarStock($id_libro, $nuevo_stock) {
+        $query = "UPDATE libros SET stock = :stock WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':stock', $nuevo_stock);
+        $stmt->bindValue(':id', $id_libro);
+        return $stmt->execute();
     }
 }
 ?>

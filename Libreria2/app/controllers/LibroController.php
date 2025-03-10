@@ -20,7 +20,7 @@ class LibroController {
         include __DIR__ . '/../views/layout.php';
     }
 
-    public function comprar() {
+    public function comprar1() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'];
             $cantidad = $_POST['cantidad'];
@@ -95,6 +95,139 @@ class LibroController {
         } else {
             header('Location: index.php');
             exit;
+        }
+    }
+    public function agregarAlCarrito() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id_libro = $_POST['id_libro'];
+            $cantidad = $_POST['cantidad'];
+    
+            // Obtener el libro desde la base de datos
+            $libro = $this->model->obtenerLibroPorId($id_libro);
+    
+            if ($libro) {
+                // Iniciar la sesión si no está iniciada
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+    
+                // Inicializar el carrito si no existe
+                if (!isset($_SESSION['carrito'])) {
+                    $_SESSION['carrito'] = [];
+                }
+    
+                // Agregar el libro al carrito
+                if (isset($_SESSION['carrito'][$id_libro])) {
+                    // Si el libro ya está en el carrito, aumentar la cantidad
+                    $_SESSION['carrito'][$id_libro]['cantidad'] += $cantidad;
+                } else {
+                    // Si no está en el carrito, agregarlo
+                    $_SESSION['carrito'][$id_libro] = [
+                        'id' => $libro['id'],
+                        'titulo' => $libro['titulo'],
+                        'autor' => $libro['autor'],
+                        'precio' => $libro['precio'],
+                        'img' => $libro['img'],
+                        'cantidad' => $cantidad
+                    ];
+                }
+    
+                // Redirigir al carrito
+                header('Location: index.php?action=ver_carrito');
+                exit;
+            } else {
+                echo "Libro no encontrado.";
+            }
+        }
+    }
+    
+    public function verCarrito() {
+        // Iniciar la sesión si no está iniciada
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    
+        // Obtener los libros del carrito
+        $carrito = isset($_SESSION['carrito']) ? $_SESSION['carrito'] : [];
+    
+        // Capturar el contenido de la vista en una variable
+        ob_start();
+        include __DIR__ . '/../views/carrito/index.php';
+        $content = ob_get_clean();
+    
+        // Incluir el layout y pasar el contenido
+        include __DIR__ . '/../views/layout.php';
+    }
+    
+    public function eliminarDelCarrito() {
+        if (isset($_GET['id'])) {
+            $id_libro = $_GET['id'];
+    
+            // Iniciar la sesión si no está iniciada
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+            // Eliminar el libro del carrito
+            if (isset($_SESSION['carrito'][$id_libro])) {
+                unset($_SESSION['carrito'][$id_libro]);
+            }
+    
+            // Redirigir al carrito
+            header('Location: index.php?action=ver_carrito');
+            exit;
+        }
+    }
+    public function comprar() {
+        // Iniciar la sesión si no está iniciada
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    
+        // Verificar si hay libros en el carrito
+        if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])) {
+            // Recorrer los libros en el carrito
+            foreach ($_SESSION['carrito'] as $id_libro => $item) {
+                // Obtener el libro desde la base de datos
+                $libro = $this->model->obtenerLibroPorId($id_libro);
+    
+                if ($libro) {
+                    // Verificar si hay suficiente stock
+                    if ($libro['stock'] >= $item['cantidad']) {
+                        // Reducir el stock en la base de datos
+                        $nuevo_stock = $libro['stock'] - $item['cantidad'];
+                        $this->model->actualizarStock($id_libro, $nuevo_stock);
+                    } else {
+                        // Si no hay suficiente stock, mostrar un mensaje de error
+                        echo "No hay suficiente stock para el libro: " . $libro['titulo'];
+                        return;
+                    }
+                }
+            }
+    
+            // Vaciar el carrito después de la compra
+            unset($_SESSION['carrito']);
+    
+            // Mostrar un mensaje de confirmación
+            $_SESSION['mensaje'] = "¡Compra realizada con éxito!";
+        } else {
+            // Si el carrito está vacío, mostrar un mensaje
+            $_SESSION['mensaje'] = "El carrito está vacío.";
+        }
+    
+        // Redirigir al carrito
+        header('Location: index.php?action=ver_carrito');
+        exit;
+    }
+    public function buscarAjax() {
+        if (isset($_GET['q'])) {
+            $palabraClave = $_GET['q'];
+    
+            // Obtener libros que coincidan con la palabra clave
+            $libros = $this->model->buscarLibros($palabraClave);
+    
+            // Pasar los libros a la vista de resultados de búsqueda
+            include __DIR__ . '/../views/libros/resultados_busqueda.php';
         }
     }
 }

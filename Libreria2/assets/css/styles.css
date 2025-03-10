@@ -26,3 +26,12 @@ body {
 footer {
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
+.enlace-blanco {
+    color: white; /* Cambia el color del texto a blanco */
+    text-decoration: none; /* Quita el subrayado */
+}
+
+.enlace-blanco:hover {
+    color: white; /* Mantén el color blanco al pasar el mouse */
+    text-decoration: none; /* Quita el subrayado al pasar el mouse */
+}
